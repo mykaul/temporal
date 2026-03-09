@@ -1,0 +1,32 @@
+# ScyllaDB as an alternative to Cassandra for testing.
+# Uses host networking so the shard-aware port is directly reachable
+# (no NAT/port-mapping that would break shard-aware connection routing).
+# ScyllaDB CQL on default port 9042, shard-aware port auto-derived as 19042.
+services:
+  scylladb:
+    image: scylladb/scylla:2025.4
+    container_name: temporal-dev-scylladb
+    network_mode: host
+    command: >-
+      --smp 2
+      --memory 1G
+      --overprovisioned 1
+      --developer-mode 1
+      --listen-address 127.0.0.1
+      --rpc-address 127.0.0.1
+      --seed-provider-parameters seeds=127.0.0.1
+      --unsafe-bypass-fsync=on
+      --kernel-page-cache=on
+      --commitlog-use-o-dsync=0
+      --collectd=0
+      --max-networking-io-control-blocks=1000
+      --flush-schema-tables-after-modification=false
+      --auto-snapshot=0
+      --logger-log-level=compaction=warn
+      --logger-log-level=migration_manager=warn
+      --shutdown-announce-in-ms=0
+    healthcheck:
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      test: ["CMD-SHELL", "cqlsh -e 'describe cluster'"]

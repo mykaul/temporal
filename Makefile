@@ -691,6 +691,42 @@ start-xdc-cluster-b: temporal-server
 start-xdc-cluster-c: temporal-server
 	./temporal-server --config-file config/development-cluster-c.yaml --allow-no-auth start
 
+##### ScyllaDB (Cassandra-compatible, uses podman) #####
+PODMAN_COMPOSE_SCYLLA := -f ./develop/docker-compose/docker-compose.scylla.yml
+
+start-scylla:
+	podman compose $(PODMAN_COMPOSE_SCYLLA) up -d
+	@printf $(COLOR) "Waiting for ScyllaDB to be ready..."
+	@until podman exec temporal-dev-scylladb cqlsh -e 'describe cluster' 2>/dev/null; do sleep 2; done
+	@printf $(COLOR) "ScyllaDB is ready on port 9042."
+
+stop-scylla:
+	podman compose $(PODMAN_COMPOSE_SCYLLA) down
+
+install-schema-scylla: temporal-cassandra-tool
+	@printf $(COLOR) "Install ScyllaDB schema..."
+	CASSANDRA_PORT=9042 CASSANDRA_DISABLE_INITIAL_HOST_LOOKUP=true CASSANDRA_IGNORE_PEER_ADDR=true ./temporal-cassandra-tool drop -k $(TEMPORAL_DB) -f
+	CASSANDRA_PORT=9042 CASSANDRA_DISABLE_INITIAL_HOST_LOOKUP=true CASSANDRA_IGNORE_PEER_ADDR=true ./temporal-cassandra-tool create -k $(TEMPORAL_DB) --rf 1
+	CASSANDRA_PORT=9042 CASSANDRA_DISABLE_INITIAL_HOST_LOOKUP=true CASSANDRA_IGNORE_PEER_ADDR=true ./temporal-cassandra-tool -k $(TEMPORAL_DB) setup-schema -v 0.0
+	CASSANDRA_PORT=9042 CASSANDRA_DISABLE_INITIAL_HOST_LOOKUP=true CASSANDRA_IGNORE_PEER_ADDR=true ./temporal-cassandra-tool -k $(TEMPORAL_DB) update-schema -d ./schema/cassandra/temporal/versioned
+
+install-schema-scylla-es: install-schema-scylla install-schema-es
+
+start-scylla-es: temporal-server
+	./temporal-server --config-file config/development-scylla-es.yaml --allow-no-auth start
+
+integration-test-scylla: clean-test-output
+	@printf $(COLOR) "Run integration tests against ScyllaDB..."
+	@CASSANDRA_PORT=9042 CASSANDRA_DISABLE_INITIAL_HOST_LOOKUP=true CASSANDRA_IGNORE_PEER_ADDR=true CGO_ENABLED=$(CGO_ENABLED) go test $(INTEGRATION_TEST_DIRS) $(COMPILED_TEST_ARGS) 2>&1 | tee -a test.log
+	@$(MAKE) verify-test-log
+
+functional-test-scylla: clean-test-output
+	@printf $(COLOR) "Run functional tests against ScyllaDB..."
+	@CASSANDRA_PORT=9042 CASSANDRA_DISABLE_INITIAL_HOST_LOOKUP=true CASSANDRA_IGNORE_PEER_ADDR=true CGO_ENABLED=$(CGO_ENABLED) go test $(FUNCTIONAL_TEST_ROOT) $(COMPILED_TEST_ARGS) -persistenceType=$(PERSISTENCE_TYPE) -persistenceDriver=cassandra 2>&1 | tee -a test.log
+	@CASSANDRA_PORT=9042 CASSANDRA_DISABLE_INITIAL_HOST_LOOKUP=true CASSANDRA_IGNORE_PEER_ADDR=true CGO_ENABLED=$(CGO_ENABLED) go test $(FUNCTIONAL_TEST_NDC_ROOT) $(COMPILED_TEST_ARGS) -persistenceType=$(PERSISTENCE_TYPE) -persistenceDriver=cassandra 2>&1 | tee -a test.log
+	@CASSANDRA_PORT=9042 CASSANDRA_DISABLE_INITIAL_HOST_LOOKUP=true CASSANDRA_IGNORE_PEER_ADDR=true CGO_ENABLED=$(CGO_ENABLED) go test $(FUNCTIONAL_TEST_XDC_ROOT) $(COMPILED_TEST_ARGS) -persistenceType=$(PERSISTENCE_TYPE) -persistenceDriver=cassandra 2>&1 | tee -a test.log
+	@$(MAKE) verify-test-log
+
 ##### Grafana #####
 update-dashboards:
 	@printf $(COLOR) "Update dashboards submodule from remote..."

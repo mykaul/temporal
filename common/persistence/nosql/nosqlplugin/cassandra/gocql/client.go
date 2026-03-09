@@ -147,6 +147,8 @@ func ConfigureCassandraCluster(cfg config.Cassandra, cluster *gocql.ClusterConfi
 	cluster.Consistency = cfg.Consistency.GetConsistency()
 	cluster.SerialConsistency = cfg.Consistency.GetSerialConsistency()
 	cluster.DisableInitialHostLookup = cfg.DisableInitialHostLookup
+	cluster.IgnorePeerAddr = cfg.IgnorePeerAddr
+	cluster.DisableShardAwarePort = cfg.DisableShardAwarePort
 
 	cluster.ReconnectionPolicy = &gocql.ExponentialReconnectionPolicy{
 		MaxRetries:      30,
@@ -155,6 +157,7 @@ func ConfigureCassandraCluster(cfg config.Cassandra, cluster *gocql.ClusterConfi
 	}
 
 	cluster.PoolConfig.HostSelectionPolicy = gocql.TokenAwareHostPolicy(gocql.RoundRobinHostPolicy())
+	cluster.RetryPolicy = &gocql.SimpleRetryPolicy{NumRetries: 5}
 
 	if cfg.AddressTranslator != nil && cfg.AddressTranslator.Translator != "" {
 		addressTranslator, err := translator.LookupTranslator(cfg.AddressTranslator.Translator)
