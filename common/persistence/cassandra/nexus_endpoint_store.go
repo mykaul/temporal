@@ -100,15 +100,15 @@ func (s *NexusEndpointStore) CreateOrUpdateNexusEndpoint(
 			request.LastKnownTableVersion)
 	}
 
-	previousPartitionStatus := make(map[string]any)
-	applied, iter, err := s.session.MapExecuteBatchCAS(batch, previousPartitionStatus)
+	row1 := make(map[string]any)
+	applied, iter, err := s.session.MapExecuteBatchCAS(batch, row1)
 
 	if err != nil {
 		return gocql.ConvertError("CreateOrUpdateNexusEndpoint", err)
 	}
 
-	previousEndpoint := make(map[string]any)
-	iter.MapScan(previousEndpoint)
+	row2 := make(map[string]any)
+	iter.MapScan(row2)
 
 	err = iter.Close()
 	if err != nil {
@@ -116,6 +116,11 @@ func (s *NexusEndpointStore) CreateOrUpdateNexusEndpoint(
 	}
 
 	if !applied {
+		previousPartitionStatus, previousEndpoint, err := classifyBatchCASRows(row1, row2)
+		if err != nil {
+			return fmt.Errorf("CreateOrUpdateNexusEndpoint: %w", err)
+		}
+
 		currentTableVersion, err := getTypedFieldFromRow[int64]("version", previousPartitionStatus)
 		if err != nil {
 			return fmt.Errorf("error retrieving current table version: %w", err)
@@ -225,15 +230,18 @@ func (s *NexusEndpointStore) DeleteNexusEndpoint(
 ) error {
 	batch := s.session.NewBatch(gocql.LoggedBatch).WithContext(ctx)
 
-	batch.Query(templateDeleteEndpointQuery,
-		rowTypeNexusEndpoint,
-		request.ID)
-
+	// Table version update must be the first statement so it is returned as the first CAS result
+	// row. CAS result row ordering differs between Cassandra (clustering key order) and ScyllaDB
+	// (statement order), but placing the type=0 partition status first satisfies both.
 	batch.Query(templateUpdateTableVersion,
 		request.LastKnownTableVersion+1,
 		rowTypePartitionStatus,
 		tableVersionEndpointID,
 		request.LastKnownTableVersion)
+
+	batch.Query(templateDeleteEndpointQuery,
+		rowTypeNexusEndpoint,
+		request.ID)
 
 	previousPartitionStatus := make(map[string]any)
 	applied, iter, err := s.session.MapExecuteBatchCAS(batch, previousPartitionStatus)
@@ -352,4 +360,22 @@ func (s *NexusEndpointStore) getEndpointList(iter gocql.Iter) ([]p.InternalNexus
 	}
 
 	return endpoints, nil
+}
+
+// classifyBatchCASRows assigns two CAS result rows to their correct roles based on the "type"
+// column. This is needed because Cassandra returns CAS batch result rows in clustering key order
+// while ScyllaDB returns them in statement order. row2 may be nil if only one result row exists.
+func classifyBatchCASRows(row1, row2 map[string]any) (partitionStatus, endpoint map[string]any, err error) {
+	rowType, err := getTypedFieldFromRow[int]("type", row1)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error reading type from CAS result row: %w", err)
+	}
+	switch rowType {
+	case rowTypePartitionStatus:
+		return row1, row2, nil
+	case rowTypeNexusEndpoint:
+		return row2, row1, nil
+	default:
+		return nil, nil, fmt.Errorf("unexpected row type %d in CAS result", rowType)
+	}
 }
