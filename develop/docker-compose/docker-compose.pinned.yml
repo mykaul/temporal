@@ -1,0 +1,7 @@
+# CPU-pinned overlay for reproducible benchmarks.
+# Usage: podman compose -f docker-compose.yml -f docker-compose.pinned.yml up cassandra elasticsearch
+services:
+  cassandra:
+    cpuset: "0,1"
+  elasticsearch:
+    cpuset: "6,7"
