@@ -148,7 +148,7 @@ func (d *matchingTaskStoreV2) GetTasks(
 			request.InclusiveMinTaskID,
 		)
 	}
-	iter := query.WithContext(ctx).PageSize(request.PageSize).PageState(request.NextPageToken).Iter()
+	iter := query.WithContext(ctx).Idempotent(true).PageSize(request.PageSize).PageState(request.NextPageToken).Iter()
 
 	response := &p.InternalGetTasksResponse{}
 	task := make(map[string]any)
@@ -211,7 +211,7 @@ func (d *matchingTaskStoreV2) CompleteTasksLessThan(
 		rowTypeTaskInSubqueue(request.Subqueue),
 		request.ExclusiveMaxPass,
 		request.ExclusiveMaxTaskID,
-	).WithContext(ctx)
+	).WithContext(ctx).Idempotent(true)
 	err := query.Exec()
 	if err != nil {
 		return 0, gocql.ConvertError("CompleteTasksLessThan", err)

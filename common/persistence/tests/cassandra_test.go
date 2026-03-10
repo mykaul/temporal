@@ -691,6 +691,10 @@ func (q failingQuery) MapScanCAS(map[string]any) (bool, error) {
 	return false, assert.AnError
 }
 
+func (q failingQuery) Idempotent(bool) gocql.Query {
+	return q
+}
+
 func (q failingQuery) WithContext(context.Context) gocql.Query {
 	return q
 }
