@@ -112,7 +112,7 @@ func (q *QueueStore) getLastMessageID(
 	queueType persistence.QueueType,
 ) (int64, error) {
 
-	query := q.session.Query(templateGetLastMessageIDQuery, queueType).WithContext(ctx)
+	query := q.session.Query(templateGetLastMessageIDQuery, queueType).WithContext(ctx).Idempotent(true)
 	result := make(map[string]any)
 	err := query.MapScan(result)
 	if err != nil {
@@ -134,7 +134,7 @@ func (q *QueueStore) ReadMessages(
 		q.queueType,
 		lastMessageID,
 		maxCount,
-	).WithContext(ctx)
+	).WithContext(ctx).Idempotent(true)
 
 	iter := query.Iter()
 
@@ -166,7 +166,7 @@ func (q *QueueStore) ReadMessagesFromDLQ(
 		q.getDLQTypeFromQueueType(),
 		firstMessageID,
 		lastMessageID,
-	).WithContext(ctx)
+	).WithContext(ctx).Idempotent(true)
 	iter := query.PageSize(pageSize).PageState(pageToken).Iter()
 
 	var result []*persistence.QueueMessage
@@ -193,7 +193,7 @@ func (q *QueueStore) DeleteMessagesBefore(
 	messageID int64,
 ) error {
 
-	query := q.session.Query(templateDeleteMessagesBeforeQuery, q.queueType, messageID).WithContext(ctx)
+	query := q.session.Query(templateDeleteMessagesBeforeQuery, q.queueType, messageID).WithContext(ctx).Idempotent(true)
 	if err := query.Exec(); err != nil {
 		return serviceerror.NewUnavailablef("DeleteMessagesBefore operation failed. Error %v", err)
 	}
@@ -206,7 +206,7 @@ func (q *QueueStore) DeleteMessageFromDLQ(
 ) error {
 
 	// Use negative queue type as the dlq type
-	query := q.session.Query(templateDeleteMessageQuery, q.getDLQTypeFromQueueType(), messageID).WithContext(ctx)
+	query := q.session.Query(templateDeleteMessageQuery, q.getDLQTypeFromQueueType(), messageID).WithContext(ctx).Idempotent(true)
 	if err := query.Exec(); err != nil {
 		return serviceerror.NewUnavailablef("DeleteMessageFromDLQ operation failed. Error %v", err)
 	}
@@ -221,7 +221,7 @@ func (q *QueueStore) RangeDeleteMessagesFromDLQ(
 ) error {
 
 	// Use negative queue type as the dlq type
-	query := q.session.Query(templateDeleteMessagesQuery, q.getDLQTypeFromQueueType(), firstMessageID, lastMessageID).WithContext(ctx)
+	query := q.session.Query(templateDeleteMessagesQuery, q.getDLQTypeFromQueueType(), firstMessageID, lastMessageID).WithContext(ctx).Idempotent(true)
 	if err := query.Exec(); err != nil {
 		return serviceerror.NewUnavailablef("RangeDeleteMessagesFromDLQ operation failed. Error %v", err)
 	}
@@ -295,7 +295,7 @@ func (q *QueueStore) getQueueMetadata(
 	queueType persistence.QueueType,
 ) (*persistence.InternalQueueMetadata, error) {
 
-	query := q.session.Query(templateGetQueueMetadataQuery, queueType).WithContext(ctx)
+	query := q.session.Query(templateGetQueueMetadataQuery, queueType).WithContext(ctx).Idempotent(true)
 	message := make(map[string]any)
 	err := query.MapScan(message)
 	if err != nil {
