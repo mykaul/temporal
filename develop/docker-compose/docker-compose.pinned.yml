@@ -4,4 +4,4 @@ services:
   cassandra:
     cpuset: "0,1"
   elasticsearch:
-    cpuset: "6,7"
+    cpuset: "8,9,10,11"
