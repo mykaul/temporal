@@ -10,6 +10,4 @@ CREATE TABLE nexus_incoming_services
     -- When type=NexusIncomingService contains the service version used for optimistic concurrency
     version         bigint,
     PRIMARY KEY ((partition), type, service_id)
-) WITH COMPACTION = {
-    'class': 'org.apache.cassandra.db.compaction.LeveledCompactionStrategy'
-    };
+);

@@ -12,6 +12,4 @@ CREATE TABLE nexus_endpoints
     -- When type=NexusEndpoint contains the endpoint version used for optimistic concurrency.
     version         bigint,
     PRIMARY KEY ((partition), type, id)
-) WITH COMPACTION = {
-    'class': 'org.apache.cassandra.db.compaction.LeveledCompactionStrategy'
-    };
+);

@@ -13,6 +13,4 @@ CREATE TABLE task_queue_user_data (
   -- Note that this imposes a limit on total task queue user data within one namespace (see the relevant single
   -- partition Cassandra limits).
   PRIMARY KEY ((namespace_id), build_id, task_queue_name)
-) WITH COMPACTION = {
-    'class': 'org.apache.cassandra.db.compaction.LeveledCompactionStrategy'
-  };
+);

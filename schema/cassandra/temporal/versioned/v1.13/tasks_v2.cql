@@ -13,6 +13,4 @@ CREATE TABLE tasks_v2
   task_queue          blob,
   task_queue_encoding text,
   PRIMARY KEY ((namespace_id, task_queue_name, task_queue_type), type, pass, task_id)
-) WITH COMPACTION = {
-    'class': 'org.apache.cassandra.db.compaction.LeveledCompactionStrategy'
-    };
+);

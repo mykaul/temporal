@@ -46,9 +46,7 @@ CREATE TABLE executions (
   checksum                       blob,
   checksum_encoding              text,
   PRIMARY KEY  (shard_id, type, namespace_id, workflow_id, run_id, visibility_ts, task_id)
-) WITH COMPACTION = {
-    'class': 'org.apache.cassandra.db.compaction.LeveledCompactionStrategy'
-  };
+);
 
 CREATE TABLE history_node (
   tree_id           uuid,
@@ -58,10 +56,7 @@ CREATE TABLE history_node (
   data                blob, -- Batch of workflow execution history events as a blob
   data_encoding       text, -- Protocol used for history serialization
   PRIMARY KEY ((tree_id), branch_id, node_id, txn_id )
-) WITH CLUSTERING ORDER BY (branch_id ASC, node_id ASC, txn_id DESC)
-  AND COMPACTION = {
-     'class': 'org.apache.cassandra.db.compaction.LeveledCompactionStrategy'
-};
+) WITH CLUSTERING ORDER BY (branch_id ASC, node_id ASC, txn_id DESC);
 
 CREATE TABLE history_tree (
   tree_id               uuid,
@@ -69,9 +64,7 @@ CREATE TABLE history_tree (
   branch                blob,
   branch_encoding       text,
   PRIMARY KEY ((tree_id), branch_id )
-) WITH COMPACTION = {
-    'class': 'org.apache.cassandra.db.compaction.LeveledCompactionStrategy'
-};
+);
 
 -- Stores activity or workflow tasks
 CREATE TABLE tasks (
@@ -86,17 +79,14 @@ CREATE TABLE tasks (
   task_queue             blob,
   task_queue_encoding    text,
   PRIMARY KEY ((namespace_id, task_queue_name, task_queue_type), type, task_id)
-) WITH COMPACTION = {
-    'class': 'org.apache.cassandra.db.compaction.LeveledCompactionStrategy'
-  };
+);
 
 -- this table is only used for storage of mapping of namespace uuid to namespace name
 CREATE TABLE namespaces_by_id (
   id     uuid,
   name   text,
   PRIMARY KEY (id)
-) WITH COMPACTION = {
-    'class': 'org.apache.cassandra.db.compaction.LeveledCompactionStrategy'  };
+);
 
 
 CREATE TABLE namespaces (
@@ -108,36 +98,28 @@ CREATE TABLE namespaces (
   is_global_namespace           boolean,
   notification_version          bigint,
   PRIMARY KEY (namespaces_partition, name)
-)  WITH COMPACTION = {
-     'class': 'org.apache.cassandra.db.compaction.LeveledCompactionStrategy'
-   };
+);
 
 CREATE TABLE queue (
   queue_type      int,
   message_id      bigint,
   message_payload blob,
   PRIMARY KEY  (queue_type, message_id)
-) WITH COMPACTION = {
-    'class': 'org.apache.cassandra.db.compaction.LeveledCompactionStrategy'
-  };
+);
 
 CREATE TABLE queue_metadata (
   queue_type        int,
   cluster_ack_level map<text, bigint>,
   version           bigint,
 PRIMARY KEY (queue_type)
-)  WITH COMPACTION = {
-     'class': 'org.apache.cassandra.db.compaction.LeveledCompactionStrategy'
-   };
+);
 
 CREATE TABLE cluster_metadata (
   metadata_partition      int,
   immutable_data          blob,
   immutable_data_encoding text,
   PRIMARY KEY  (metadata_partition)
-) WITH COMPACTION = {
-    'class': 'org.apache.cassandra.db.compaction.LeveledCompactionStrategy'
-    };
+);
 
 CREATE TABLE cluster_membership
 (
@@ -149,9 +131,7 @@ CREATE TABLE cluster_membership
     session_start        timestamp,
     last_heartbeat       timestamp,
     PRIMARY KEY (membership_partition, role, host_id)
-) WITH COMPACTION = {
-    'class': 'org.apache.cassandra.db.compaction.LeveledCompactionStrategy'
-    };
+);
 
 CREATE INDEX cm_lastheartbeat_idx on cluster_membership (last_heartbeat);
 CREATE INDEX cm_sessionstart_idx on cluster_membership (session_start);
