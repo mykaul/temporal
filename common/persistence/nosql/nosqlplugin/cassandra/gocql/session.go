@@ -24,6 +24,14 @@ const (
 	refreshErrorTagValue    = "error"
 )
 
+// defaultSpeculativeExecutionPolicy is shared across all queries. gocql only
+// applies speculative execution to queries marked as idempotent, so it is safe
+// to set on every query unconditionally.
+var defaultSpeculativeExecutionPolicy = &gocql.SimpleSpeculativeExecution{
+	NumAttempts:  1,
+	TimeoutDelay: 9 * time.Second,
+}
+
 type (
 	session struct {
 		status               int32
@@ -116,6 +124,7 @@ func (s *session) Query(
 	if q == nil {
 		return nil
 	}
+	q.SetSpeculativeExecutionPolicy(defaultSpeculativeExecutionPolicy)
 
 	return &query{
 		session:    s,
