@@ -562,8 +562,7 @@ func (t *serializerImpl) ChecksumFromBlob(data *commonpb.DataBlob) (*persistence
 }
 
 func (t *serializerImpl) QueueMetadataToBlob(metadata *persistencespb.QueueMetadata) (*commonpb.DataBlob, error) {
-	// TODO change ENCODING_TYPE_JSON to ENCODING_TYPE_PROTO3
-	return encodeBlob(metadata, enumspb.ENCODING_TYPE_JSON)
+	return encodeBlob(metadata, enumspb.ENCODING_TYPE_PROTO3)
 }
 
 func (t *serializerImpl) QueueMetadataFromBlob(data *commonpb.DataBlob) (*persistencespb.QueueMetadata, error) {
