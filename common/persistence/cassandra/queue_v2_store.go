@@ -163,7 +163,7 @@ func (s *queueV2Store) ReadMessages(
 	).WithContext(ctx).Iter()
 
 	var (
-		messages []persistence.QueueV2Message
+		messages = make([]persistence.QueueV2Message, 0, request.PageSize)
 		// messageID is the ID of the last message returned by the query.
 		messageID int64
 	)
@@ -476,7 +476,7 @@ func (s *queueV2Store) ListQueues(
 		request.QueueType,
 	).PageSize(request.PageSize).PageState(request.NextPageToken).WithContext(ctx).Iter()
 
-	var queues []persistence.QueueInfo
+	var queues = make([]persistence.QueueInfo, 0, request.PageSize)
 	for {
 		var (
 			queueName        string
