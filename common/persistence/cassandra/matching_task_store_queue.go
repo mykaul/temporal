@@ -150,7 +150,7 @@ func (d *taskQueueStore) GetTaskQueue(
 		request.TaskType,
 		rowTypeTaskQueue,
 		taskQueueTaskID,
-	).WithContext(ctx)
+	).WithContext(ctx).Idempotent(true)
 
 	var rangeID int64
 	var tlBytes []byte

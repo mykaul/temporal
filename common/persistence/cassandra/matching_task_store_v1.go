@@ -136,7 +136,7 @@ func (d *matchingTaskStoreV1) GetTasks(
 		rowTypeTaskInSubqueue(request.Subqueue),
 		request.InclusiveMinTaskID,
 		request.ExclusiveMaxTaskID,
-	).WithContext(ctx)
+	).WithContext(ctx).Idempotent(true)
 	iter := query.PageSize(request.PageSize).PageState(request.NextPageToken).Iter()
 
 	response := &p.InternalGetTasksResponse{}

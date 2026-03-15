@@ -24,7 +24,7 @@ func NewSchemaVersionReader(session gocql.Session) *SchemaVersionReader {
 
 // ReadSchemaVersion returns the current schema version for the Keyspace
 func (svr *SchemaVersionReader) ReadSchemaVersion(keyspace string) (string, error) {
-	query := svr.session.Query(readSchemaVersionCQL, keyspace)
+	query := svr.session.Query(readSchemaVersionCQL, keyspace).Idempotent(true)
 
 	iter := query.Iter()
 	var version string

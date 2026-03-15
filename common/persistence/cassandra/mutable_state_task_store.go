@@ -296,7 +296,7 @@ func (d *MutableStateTaskStore) getTransferTasks(
 		defaultVisibilityTimestamp,
 		request.InclusiveMinTaskKey.TaskID,
 		request.ExclusiveMaxTaskKey.TaskID,
-	).WithContext(ctx)
+	).WithContext(ctx).Idempotent(true)
 	iter := query.PageSize(request.BatchSize).PageState(request.NextPageToken).Iter()
 
 	response := &p.InternalGetHistoryTasksResponse{
@@ -379,7 +379,7 @@ func (d *MutableStateTaskStore) getTimerTasks(
 		rowTypeTimerRunID,
 		minTimestamp,
 		maxTimestamp,
-	).WithContext(ctx)
+	).WithContext(ctx).Idempotent(true)
 	iter := query.PageSize(request.BatchSize).PageState(request.NextPageToken).Iter()
 
 	response := &p.InternalGetHistoryTasksResponse{
@@ -466,7 +466,7 @@ func (d *MutableStateTaskStore) getReplicationTasks(
 		defaultVisibilityTimestamp,
 		request.InclusiveMinTaskKey.TaskID,
 		request.ExclusiveMaxTaskKey.TaskID,
-	).WithContext(ctx).PageSize(request.BatchSize).PageState(request.NextPageToken)
+	).WithContext(ctx).Idempotent(true).PageSize(request.BatchSize).PageState(request.NextPageToken)
 
 	return d.populateGetReplicationTasksResponse(query, "GetReplicationTasks")
 }
@@ -553,7 +553,7 @@ func (d *MutableStateTaskStore) GetReplicationTasksFromDLQ(
 		defaultVisibilityTimestamp,
 		request.InclusiveMinTaskKey.TaskID,
 		request.ExclusiveMaxTaskKey.TaskID,
-	).WithContext(ctx).PageSize(request.BatchSize).PageState(request.NextPageToken)
+	).WithContext(ctx).Idempotent(true).PageSize(request.BatchSize).PageState(request.NextPageToken)
 
 	return d.populateGetReplicationTasksResponse(query, "GetReplicationTasksFromDLQ")
 }
@@ -610,7 +610,7 @@ func (d *MutableStateTaskStore) IsReplicationDLQEmpty(
 		rowTypeDLQRunID,
 		defaultVisibilityTimestamp,
 		request.InclusiveMinTaskKey.TaskID,
-	).WithContext(ctx)
+	).WithContext(ctx).Idempotent(true)
 
 	if err := query.Scan(nil); err != nil {
 		if gocql.IsNotFoundError(err) {
@@ -636,7 +636,7 @@ func (d *MutableStateTaskStore) getVisibilityTasks(
 		defaultVisibilityTimestamp,
 		request.InclusiveMinTaskKey.TaskID,
 		request.ExclusiveMaxTaskKey.TaskID,
-	).WithContext(ctx)
+	).WithContext(ctx).Idempotent(true)
 	iter := query.PageSize(request.BatchSize).PageState(request.NextPageToken).Iter()
 
 	response := &p.InternalGetHistoryTasksResponse{
@@ -766,7 +766,7 @@ func (d *MutableStateTaskStore) getHistoryImmedidateTasks(
 		defaultVisibilityTimestamp,
 		request.InclusiveMinTaskKey.TaskID,
 		request.ExclusiveMaxTaskKey.TaskID,
-	).WithContext(ctx)
+	).WithContext(ctx).Idempotent(true)
 
 	iter := query.PageSize(request.BatchSize).PageState(request.NextPageToken).Iter()
 
@@ -815,7 +815,7 @@ func (d *MutableStateTaskStore) getHistoryScheduledTasks(
 		rowTypeHistoryTaskRunID,
 		minTimestamp,
 		maxTimestamp,
-	).WithContext(ctx)
+	).WithContext(ctx).Idempotent(true)
 
 	iter := query.PageSize(request.BatchSize).PageState(request.NextPageToken).Iter()
 
@@ -832,7 +832,6 @@ func (d *MutableStateTaskStore) getHistoryScheduledTasks(
 			Key:  tasks.NewKey(timestamp, taskID),
 			Blob: p.NewDataBlob(data, encoding),
 		})
-
 		timestamp = time.Time{}
 		taskID = 0
 		data = nil

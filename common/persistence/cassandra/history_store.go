@@ -166,7 +166,7 @@ func (h *HistoryStore) ReadHistoryBranch(
 		queryString = v2templateReadHistoryNode
 	}
 
-	query := h.Session.Query(queryString, treeID, branchID, request.MinNodeID, request.MaxNodeID).WithContext(ctx)
+	query := h.Session.Query(queryString, treeID, branchID, request.MinNodeID, request.MaxNodeID).WithContext(ctx).Idempotent(true)
 
 	iter := query.PageSize(request.PageSize).PageState(request.NextPageToken).Iter()
 	var pagingToken []byte
@@ -303,7 +303,7 @@ func (h *HistoryStore) GetAllHistoryTreeBranches(
 	request *p.GetAllHistoryTreeBranchesRequest,
 ) (*p.InternalGetAllHistoryTreeBranchesResponse, error) {
 
-	query := h.Session.Query(v2templateScanAllTreeBranches).WithContext(ctx)
+	query := h.Session.Query(v2templateScanAllTreeBranches).WithContext(ctx).Idempotent(true)
 
 	iter := query.PageSize(request.PageSize).PageState(request.NextPageToken).Iter()
 
@@ -326,11 +326,6 @@ func (h *HistoryStore) GetAllHistoryTreeBranches(
 			Encoding: encoding,
 		}
 		branches = append(branches, branch)
-
-		treeUUID = ""
-		branchUUID = ""
-		data = nil
-		encoding = ""
 	}
 
 	if err := iter.Close(); err != nil {
@@ -360,7 +355,7 @@ func (h *HistoryStore) GetHistoryTreeContainingBranch(
 	if err != nil {
 		return nil, serviceerror.NewInternalf("ReadHistoryBranch. Gocql TreeId UUID cast failed. Error: %v", err)
 	}
-	query := h.Session.Query(v2templateReadAllBranches, treeID).WithContext(ctx)
+	query := h.Session.Query(v2templateReadAllBranches, treeID).WithContext(ctx).Idempotent(true)
 
 	pageSize := 100
 	var pagingToken []byte
@@ -376,10 +371,6 @@ func (h *HistoryStore) GetHistoryTreeContainingBranch(
 		var encoding string
 		for iter.Scan(&branchUUID, &data, &encoding) {
 			treeInfos = append(treeInfos, p.NewDataBlob(data, encoding))
-
-			branchUUID = ""
-			data = []byte{}
-			encoding = ""
 		}
 
 		if err := iter.Close(); err != nil {

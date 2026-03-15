@@ -316,14 +316,14 @@ func (m *MetadataStore) GetNamespace(
 
 	namespace := request.Name
 	if len(request.ID) > 0 {
-		query = m.session.Query(templateGetNamespaceQuery, request.ID).WithContext(ctx)
+		query = m.session.Query(templateGetNamespaceQuery, request.ID).WithContext(ctx).Idempotent(true)
 		err = query.Scan(&namespace)
 		if err != nil {
 			return nil, handleError(request.Name, request.ID, err)
 		}
 	}
 
-	query = m.session.Query(templateGetNamespaceByNameQueryV2, constNamespacePartition, namespace).WithContext(ctx)
+	query = m.session.Query(templateGetNamespaceByNameQueryV2, constNamespacePartition, namespace).WithContext(ctx).Idempotent(true)
 	err = query.Scan(
 		nil,
 		nil,
@@ -352,7 +352,7 @@ func (m *MetadataStore) ListNamespaces(
 	ctx context.Context,
 	request *p.InternalListNamespacesRequest,
 ) (*p.InternalListNamespacesResponse, error) {
-	query := m.session.Query(templateListNamespaceQueryV2, constNamespacePartition).WithContext(ctx)
+	query := m.session.Query(templateListNamespaceQueryV2, constNamespacePartition).WithContext(ctx).Idempotent(true)
 	pageSize := request.PageSize
 	nextPageToken := request.NextPageToken
 	response := &p.InternalListNamespacesResponse{}
@@ -418,7 +418,7 @@ func (m *MetadataStore) DeleteNamespace(
 	request *p.DeleteNamespaceRequest,
 ) error {
 	var name string
-	query := m.session.Query(templateGetNamespaceQuery, request.ID).WithContext(ctx)
+	query := m.session.Query(templateGetNamespaceQuery, request.ID).WithContext(ctx).Idempotent(true)
 	err := query.Scan(&name)
 	if err != nil {
 		if gocql.IsNotFoundError(err) {
@@ -439,7 +439,7 @@ func (m *MetadataStore) DeleteNamespaceByName(
 	request *p.DeleteNamespaceByNameRequest,
 ) error {
 	var ID []byte
-	query := m.session.Query(templateGetNamespaceByNameQueryV2, constNamespacePartition, request.Name).WithContext(ctx)
+	query := m.session.Query(templateGetNamespaceByNameQueryV2, constNamespacePartition, request.Name).WithContext(ctx).Idempotent(true)
 	err := query.Scan(&ID, nil, nil, nil, nil, nil)
 	if err != nil {
 		if gocql.IsNotFoundError(err) {
@@ -454,7 +454,7 @@ func (m *MetadataStore) GetMetadata(
 	ctx context.Context,
 ) (*p.GetMetadataResponse, error) {
 	var notificationVersion int64
-	query := m.session.Query(templateGetMetadataQueryV2, constNamespacePartition, namespaceMetadataRecordName).WithContext(ctx)
+	query := m.session.Query(templateGetMetadataQueryV2, constNamespacePartition, namespaceMetadataRecordName).WithContext(ctx).Idempotent(true)
 	err := query.Scan(&notificationVersion)
 	if err != nil {
 		if gocql.IsNotFoundError(err) {

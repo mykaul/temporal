@@ -111,7 +111,7 @@ func (q *QueueStore) getLastMessageID(
 	queueType persistence.QueueType,
 ) (int64, error) {
 
-	query := q.session.Query(templateGetLastMessageIDQuery, queueType).WithContext(ctx)
+	query := q.session.Query(templateGetLastMessageIDQuery, queueType).WithContext(ctx).Idempotent(true)
 	result := make(map[string]any)
 	err := query.MapScan(result)
 	if err != nil {
@@ -133,7 +133,7 @@ func (q *QueueStore) ReadMessages(
 		q.queueType,
 		lastMessageID,
 		maxCount,
-	).WithContext(ctx)
+	).WithContext(ctx).Idempotent(true)
 
 	iter := query.Iter()
 
@@ -165,7 +165,7 @@ func (q *QueueStore) ReadMessagesFromDLQ(
 		q.getDLQTypeFromQueueType(),
 		firstMessageID,
 		lastMessageID,
-	).WithContext(ctx)
+	).WithContext(ctx).Idempotent(true)
 	iter := query.PageSize(pageSize).PageState(pageToken).Iter()
 
 	var result []*persistence.QueueMessage
@@ -281,7 +281,8 @@ func (q *QueueStore) insertInitialQueueMetadataRecord(
 		blob.EncodingType.String(),
 		version,
 	).WithContext(ctx)
-	_, err := query.MapScanCAS(make(map[string]any))
+	previous := make(map[string]any)
+	_, err := query.MapScanCAS(previous)
 	if err != nil {
 		return fmt.Errorf("failed to insert initial queue metadata record: %v, Type: %v", err, queueType)
 	}
@@ -294,7 +295,7 @@ func (q *QueueStore) getQueueMetadata(
 	queueType persistence.QueueType,
 ) (*persistence.InternalQueueMetadata, error) {
 
-	query := q.session.Query(templateGetQueueMetadataQuery, queueType).WithContext(ctx)
+	query := q.session.Query(templateGetQueueMetadataQuery, queueType).WithContext(ctx).Idempotent(true)
 	message := make(map[string]any)
 	err := query.MapScan(message)
 	if err != nil {
@@ -324,7 +325,8 @@ func (q *QueueStore) updateAckLevel(
 		queueType,
 		metadata.Version, // condition update
 	).WithContext(ctx)
-	applied, err := query.MapScanCAS(make(map[string]any))
+	previous := make(map[string]any)
+	applied, err := query.MapScanCAS(previous)
 	if err != nil {
 		return gocql.ConvertError("updateAckLevel", err)
 	}
