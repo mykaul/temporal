@@ -138,7 +138,7 @@ func ConfigureCassandraCluster(cfg config.Cassandra, cluster *gocql.ClusterConfi
 		cluster.Timeout = cfg.Timeout
 	}
 
-	cluster.WriteTimeout = cluster.Timeout
+	cluster.WriteTimeout = 5 * time.Second * debug.TimeoutMultiplier
 	if cfg.WriteTimeout > 0 {
 		cluster.WriteTimeout = cfg.WriteTimeout
 	}

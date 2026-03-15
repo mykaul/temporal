@@ -113,7 +113,7 @@ func TestNewCassandraCluster(t *testing.T) {
 			verify: func(t *testing.T, cluster *gocql.ClusterConfig) {
 				assert.Equal(t, time.Duration(123), cluster.ConnectTimeout)
 				assert.Equal(t, time.Duration(123), cluster.Timeout)
-				assert.Equal(t, time.Duration(123), cluster.WriteTimeout)
+				assert.Equal(t, 5*time.Second, cluster.WriteTimeout)
 			},
 		},
 		"connect_timeout_and_timeout": {
@@ -124,7 +124,7 @@ func TestNewCassandraCluster(t *testing.T) {
 			verify: func(t *testing.T, cluster *gocql.ClusterConfig) {
 				assert.Equal(t, time.Duration(123), cluster.ConnectTimeout)
 				assert.Equal(t, time.Duration(456), cluster.Timeout)
-				assert.Equal(t, time.Duration(456), cluster.WriteTimeout)
+				assert.Equal(t, 5*time.Second, cluster.WriteTimeout)
 			},
 		},
 		"connect_timeout_and_write_timeout": {
