@@ -376,6 +376,10 @@ type (
 		DisableInitialHostLookup bool `yaml:"disableInitialHostLookup"`
 		// AddressTranslator translates Cassandra IP addresses, used for cases when IP addresses gocql driver returns are not accessible from the server
 		AddressTranslator *CassandraAddressTranslator `yaml:"addressTranslator"`
+		// SessionGroups allows overriding Cassandra session parameters per store group.
+		// Valid group names: "execution", "matching", "metadata", "queue".
+		// Stores not covered by an override group share the default session.
+		SessionGroups map[CassandraSessionGroupName]CassandraSessionGroupOverride `yaml:"sessionGroups"`
 	}
 
 	// CassandraStoreConsistency enables you to set the consistency settings for each Cassandra Persistence Store for Temporal
@@ -398,6 +402,16 @@ type (
 		Consistency string `yaml:"consistency"`
 		// SerialConsistency sets the consistency for the serial prtion of queries. Values identical to gocql SerialConsistency values. (defaults to LOCAL_SERIAL if not set)
 		SerialConsistency string `yaml:"serialConsistency"`
+	}
+
+	// CassandraSessionGroupName identifies a group of stores that share a Cassandra session.
+	CassandraSessionGroupName string
+
+	// CassandraSessionGroupOverride contains per-session-group overrides for Cassandra connection parameters.
+	// Only the fields that are set will override the defaults from the parent Cassandra config.
+	CassandraSessionGroupOverride struct {
+		// MaxConns overrides the max number of connections per host for this session group.
+		MaxConns int `yaml:"maxConns"`
 	}
 
 	// SQL is the configuration for connecting to a SQL backed datastore
@@ -637,6 +651,17 @@ const (
 	QueueV2Name            DataStoreName = "QueueV2"
 	ClusterMDStoreName     DataStoreName = "ClusterMDStore"
 	NexusEndpointStoreName DataStoreName = "NexusEndpointStore"
+)
+
+const (
+	// CassandraSessionGroupExecution is the session group for execution and shard stores.
+	CassandraSessionGroupExecution CassandraSessionGroupName = "execution"
+	// CassandraSessionGroupMatching is the session group for task (matching) stores.
+	CassandraSessionGroupMatching CassandraSessionGroupName = "matching"
+	// CassandraSessionGroupMetadata is the session group for metadata, cluster metadata, and nexus stores.
+	CassandraSessionGroupMetadata CassandraSessionGroupName = "metadata"
+	// CassandraSessionGroupQueue is the session group for queue stores.
+	CassandraSessionGroupQueue CassandraSessionGroupName = "queue"
 )
 
 const (
