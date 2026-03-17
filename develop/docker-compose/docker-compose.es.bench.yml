@@ -1,0 +1,10 @@
+# CPU-pinned overlay for Elasticsearch benchmarks.
+# Usage: podman compose -f docker-compose.es.yml -f docker-compose.es.bench.yml up -d elasticsearch
+#
+# See docker-compose.cass.bench.yml or docker-compose.scylla.bench.yml for the
+# full core layout.
+services:
+  elasticsearch:
+    cpuset: "8,9,10,11"
+    environment:
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m

@@ -1,0 +1,18 @@
+# Elasticsearch base compose file for development and benchmarks.
+# Usage: podman compose -f docker-compose.es.yml up -d elasticsearch
+#
+# Uses host networking to avoid NAT/bridge overhead.
+services:
+  elasticsearch:
+    image: elasticsearch:7.10.1
+    container_name: temporal-dev-elasticsearch
+    network_mode: host
+    environment:
+      - network.host=_local_,_site_
+      - network.publish_host=_local_
+      - cluster.routing.allocation.disk.threshold_enabled=true
+      - cluster.routing.allocation.disk.watermark.low=512mb
+      - cluster.routing.allocation.disk.watermark.high=256mb
+      - cluster.routing.allocation.disk.watermark.flood_stage=128mb
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms100m -Xmx100m

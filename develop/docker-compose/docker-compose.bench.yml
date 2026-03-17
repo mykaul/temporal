@@ -1,0 +1,7 @@
+# DEPRECATED: Cassandra and Elasticsearch now have standalone compose files
+# with host networking for lower latency.
+#
+# Use instead:
+#   Cassandra:     docker-compose.cass.yml + docker-compose.cass.bench.yml
+#   Elasticsearch: docker-compose.es.yml   + docker-compose.es.bench.yml
+#   ScyllaDB:      docker-compose.scylla.yml + docker-compose.scylla.bench.yml

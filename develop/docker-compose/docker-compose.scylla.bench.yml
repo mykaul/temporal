@@ -1,0 +1,23 @@
+# CPU-pinned overlay for ScyllaDB benchmarks.
+# Usage: podman compose -f docker-compose.scylla.yml -f docker-compose.scylla.bench.yml up -d scylladb
+#        podman compose -f docker-compose.es.yml -f docker-compose.es.bench.yml up -d elasticsearch
+#
+# Core layout (4 cores each, uses all 16 logical CPUs on i7-1270P):
+#   Temporal server: cores 0-3   (P-cores 0+1 HT, host taskset — fastest cores for the bottleneck)
+#   ScyllaDB:        cores 4-7   (P-cores 2+3 HT, container cpuset + --cpuset)
+#   Elasticsearch:   cores 8-11  (E-core cluster 4, via docker-compose.es.bench.yml)
+#   Omes workers:    cores 12-15 (E-core cluster 5, host taskset)
+services:
+  scylladb:
+    cpuset: "4,5,6,7"
+    privileged: true
+    command: >-
+      --smp 4
+      --memory 5G
+      --listen-address 127.0.0.1
+      --rpc-address 127.0.0.1
+      --seed-provider-parameters seeds=127.0.0.1
+      --auto-snapshot=0
+      --developer-mode 0
+      --cpuset 4-7
+      --unsafe-bypass-fsync 1

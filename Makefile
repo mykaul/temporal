@@ -559,6 +559,13 @@ install-schema-cass-es: temporal-cassandra-tool install-schema-es
 	./temporal-cassandra-tool -k $(TEMPORAL_DB) setup-schema -v 0.0
 	./temporal-cassandra-tool -k $(TEMPORAL_DB) update-schema -d ./schema/cassandra/temporal/versioned
 
+install-schema-scylla-es: temporal-cassandra-tool install-schema-es
+	@printf $(COLOR) "Install ScyllaDB schema..."
+	./temporal-cassandra-tool drop -k $(TEMPORAL_DB) -f
+	./temporal-cassandra-tool create -k $(TEMPORAL_DB) --rf 1
+	./temporal-cassandra-tool -k $(TEMPORAL_DB) setup-schema -v 0.0
+	./temporal-cassandra-tool -k $(TEMPORAL_DB) update-schema -d ./schema/cassandra/temporal/versioned
+
 install-schema-mysql: install-schema-mysql8
 
 install-schema-mysql8: temporal-sql-tool
