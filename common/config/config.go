@@ -68,6 +68,14 @@ type (
 		// Host defaults to `localhost` but can be overriden
 		// for instance in the case of dual stack IPv4/IPv6
 		Host string `yaml:"host"`
+		// BlockProfileRate controls the fraction of goroutine blocking events
+		// reported in the blocking profile. Set to a positive value (nanoseconds)
+		// to enable; 0 disables. See runtime.SetBlockProfileRate.
+		BlockProfileRate int `yaml:"blockProfileRate"`
+		// MutexProfileFraction controls the fraction of mutex contention events
+		// reported in the mutex profile. Set to a positive value N to report 1/N
+		// events; 0 disables. See runtime.SetMutexProfileFraction.
+		MutexProfileFraction int `yaml:"mutexProfileFraction"`
 	}
 
 	// RPC contains the rpc config items

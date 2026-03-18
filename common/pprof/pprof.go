@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/http"
 	_ "net/http/pprof" // DO NOT REMOVE THE LINE
+	"runtime"
 	"sync/atomic"
 
 	"go.temporal.io/server/common/config"
@@ -44,6 +45,16 @@ func (initializer *PProfInitializerImpl) Start() error {
 		initializer.Logger.Info("PProf not started due to port not set")
 		return nil
 	}
+
+	if rate := initializer.PProf.BlockProfileRate; rate > 0 {
+		runtime.SetBlockProfileRate(rate)
+		initializer.Logger.Info("Block profiling enabled", tag.NewInt("rate", rate))
+	}
+	if frac := initializer.PProf.MutexProfileFraction; frac > 0 {
+		runtime.SetMutexProfileFraction(frac)
+		initializer.Logger.Info("Mutex profiling enabled", tag.NewInt("fraction", frac))
+	}
+
 	host := initializer.PProf.Host
 	if host == "" {
 		// default to localhost which will favor ipv4 on dual stack
