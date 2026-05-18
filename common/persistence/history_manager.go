@@ -364,6 +364,13 @@ func (m *executionManagerImpl) serializeAppendHistoryNodesRequest(
 	if err != nil {
 		return nil, err
 	}
+
+	var encodingOverride string
+	blob, encodingOverride, err = m.maybeCompressHistoryBlob(blob)
+	if err != nil {
+		return nil, err
+	}
+
 	size := len(blob.Data)
 	sizeLimit := m.transactionSizeLimit()
 	if size > sizeLimit {
@@ -380,6 +387,7 @@ func (m *executionManagerImpl) serializeAppendHistoryNodesRequest(
 		Node: InternalHistoryNode{
 			NodeID:            nodeID,
 			Events:            blob,
+			EncodingOverride:  encodingOverride,
 			PrevTransactionID: request.PrevTransactionID,
 			TransactionID:     request.TransactionID,
 		},
@@ -418,7 +426,7 @@ func (m *executionManagerImpl) serializeAppendRawHistoryNodesRequest(
 		return nil, serviceerror.NewInvalidArgument(fmt.Sprintf("unable to parse branch token: %v", err))
 	}
 
-	if len(request.History.Data) == 0 {
+	if request.History == nil || len(request.History.Data) == 0 {
 		return nil, &InvalidPersistenceRequestError{
 			Msg: "events to be appended cannot be empty",
 		}
@@ -432,7 +440,14 @@ func (m *executionManagerImpl) serializeAppendRawHistoryNodesRequest(
 		}
 	}
 	// nodeID will be the first eventID
-	size := len(request.History.Data)
+	blob := request.History
+	var encodingOverride string
+	blob, encodingOverride, err = m.maybeCompressHistoryBlob(blob)
+	if err != nil {
+		return nil, err
+	}
+
+	size := len(blob.Data)
 	sizeLimit := m.transactionSizeLimit()
 	if size > sizeLimit {
 		return nil, &TransactionSizeLimitError{
@@ -447,7 +462,8 @@ func (m *executionManagerImpl) serializeAppendRawHistoryNodesRequest(
 		BranchInfo:  branch,
 		Node: InternalHistoryNode{
 			NodeID:            nodeID,
-			Events:            request.History,
+			Events:            blob,
+			EncodingOverride:  encodingOverride,
 			PrevTransactionID: request.PrevTransactionID,
 			TransactionID:     request.TransactionID,
 		},
