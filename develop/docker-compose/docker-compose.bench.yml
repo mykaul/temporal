@@ -1,0 +1,41 @@
+services:
+  scylladb:
+    image: scylladb/scylla:2026.2
+    container_name: temporal-dev-scylladb
+    network_mode: host
+    command: >
+      --smp 4
+      --memory 4G
+      --developer-mode 1
+      --listen-address 127.0.0.1
+      --rpc-address 127.0.0.1
+      --seed-provider-parameters seeds=127.0.0.1
+      --unsafe-bypass-fsync=on
+      --kernel-page-cache=on
+      --commitlog-use-o-dsync=0
+      --collectd=0
+      --max-networking-io-control-blocks=1000
+      --flush-schema-tables-after-modification=false
+      --auto-snapshot=0
+      --shutdown-announce-in-ms=0
+    cpuset: "0,1,2,3"
+    privileged: true
+    volumes:
+      - /mnt/tmpfs-scylla:/var/lib/scylla
+
+  elasticsearch:
+    image: docker.io/library/elasticsearch:7.10.1
+    container_name: temporal-dev-elasticsearch
+    network_mode: host
+    environment:
+      - network.host=_local_,_site_
+      - network.publish_host=_local_
+      - cluster.routing.allocation.disk.threshold_enabled=true
+      - cluster.routing.allocation.disk.watermark.low=512mb
+      - cluster.routing.allocation.disk.watermark.high=256mb
+      - cluster.routing.allocation.disk.watermark.flood_stage=128mb
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms100m -Xmx100m
+    cpuset: "8"
+    tmpfs:
+      - /usr/share/elasticsearch/data:size=2G

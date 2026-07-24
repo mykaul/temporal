@@ -1,0 +1,23 @@
+services:
+  scylladb:
+    image: scylladb/scylla:2026.2
+    container_name: temporal-dev-scylladb
+    network_mode: host
+    command: >
+      --smp 4
+      --memory 4G
+      --overprovisioned 1
+      --developer-mode 1
+      --listen-address 127.0.0.1
+      --rpc-address 127.0.0.1
+      --seed-provider-parameters seeds=127.0.0.1
+      --unsafe-bypass-fsync=on
+      --kernel-page-cache=on
+      --commitlog-use-o-dsync=0
+      --collectd=0
+      --max-networking-io-control-blocks=1000
+      --flush-schema-tables-after-modification=false
+      --auto-snapshot=0
+    privileged: true
+    volumes:
+      - /mnt/tmpfs-scylla:/var/lib/scylla

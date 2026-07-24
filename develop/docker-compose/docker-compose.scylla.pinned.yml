@@ -1,0 +1,19 @@
+services:
+  scylladb:
+    cpuset: "0,1,2"
+    command: >-
+      --smp 3
+      --cpuset 0-2
+      --memory 4G
+      --developer-mode 1
+      --listen-address 127.0.0.1
+      --rpc-address 127.0.0.1
+      --seed-provider-parameters seeds=127.0.0.1
+      --unsafe-bypass-fsync=on
+      --kernel-page-cache=on
+      --commitlog-use-o-dsync=0
+      --collectd=0
+      --max-networking-io-control-blocks=1000
+      --flush-schema-tables-after-modification=false
+      --auto-snapshot=0
+      --shutdown-announce-in-ms=0

@@ -49,3 +49,11 @@ history.ReplicationEnableUpdateWithNewTaskMerge:
   - value: true
 history.hostLevelCacheMaxSize:
   - value: 8192
+# Default is 1 minute, which makes newly-added custom search attributes
+# (via `temporal operator search-attribute create`) unusable for up to 60s
+# after the RPC returns success — workflow starts referencing the new
+# attribute fail with "no mapping defined" until this cache refreshes.
+system.clusterMetadataRefreshInterval:
+  - value: 1s
+system.forceSearchAttributesCacheRefreshOnRead:
+  - value: true
