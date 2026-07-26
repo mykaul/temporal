@@ -27,6 +27,41 @@ OMES_CPUSET=9-15         # cores for omes + worker
 For non-hybrid CPUs: Omit HT siblings after dividing. If all cores are equal,
 give ScyllaDB half the cores and split the rest between server, ES, omes.
 
+## Dynamic Config
+
+Add these to `config/dynamicconfig/development-cass.yaml`:
+
+```yaml
+history.shardIOConcurrency:
+  - value: 4096
+matching.rps:
+  - value: 100000
+    constraints: {}
+matching.namespaceRPS:
+  - value: 100000
+    constraints: {}
+```
+
+**IMPORTANT:** The YAML list items (`- value:`) and their continuation lines
+(`constraints: {}`) must be at the **same indentation level**. Bad indentation
+causes the entire file to silently fall back to defaults.
+
+```yaml
+# BAD — constraints at wrong level, invalid YAML:
+matching.rps:
+  - value: 100000
+  constraints: {}
+
+# GOOD — value and constraints are siblings:
+matching.rps:
+  - value: 100000
+    constraints: {}
+```
+
+If the server is started from a **copy** of the repo (e.g. `/tmp/perf-merge/`),
+the config at `$COPY_DIR/config/dynamicconfig/development-cass.yaml` is used,
+NOT the source repo. Always `diff` or `cp` to keep them in sync.
+
 ## Procedure
 
 In each cycle, run every binary exactly once. Interleave to cancel drift:  
@@ -115,6 +150,17 @@ pkill -f "temporal-server-.*--env" 2>/dev/null || true
 sleep 3
 ```
 
+To collect CPU/block/mutex profiles during a benchmark run, fetch from the
+pprof port (configured in `development-cass-es.yaml` under `pprof.port`, default
+7936):
+
+```bash
+curl -s -o /tmp/cpu.pprof "http://localhost:7936/debug/pprof/profile?seconds=25"
+curl -s -o /tmp/block.pprof "http://localhost:7936/debug/pprof/block?seconds=25"
+curl -s -o /tmp/mutex.pprof "http://localhost:7936/debug/pprof/mutex?seconds=25"
+```
+(Note: path is `/debug/pprof/`, not `/pprof/`.)
+
 ### 4. End-of-cycle teardown (ScyllaDB + ES, run after each full cycle)
 
 ```bash
@@ -138,6 +184,7 @@ cpu_restore_state
 4. **Interleave binaries** within each cycle to cancel temporal drift
 5. **3 cycles minimum** for standard error estimation
 6. CPU restore: `cpu_restore_state` at the very end
+7. **Validate the dynamic config YAML** before starting the server; use a linter or read the file. A single indentation error silences all overrides and falls back to defaults.
 
 ## Binaries (build once)
 
@@ -157,6 +204,44 @@ make temporal-cassandra-tool temporal-elasticsearch-tool
 
 - `docker-compose.scylla.pinned.yml`: add `cpuset: "$SCYLLA_CPUSET"`, args `--smp $SCYLLA_SMP --memory $SCYLLA_MEM`
 - `docker-compose.pinned.yml`: add `cpuset: "$ES_CPUSET"` under `elasticsearch.deploy.resources`
+
+## Diagnosis and Key Findings
+
+### `history.shardIOConcurrency` default (1) is a universal bottleneck
+
+The default value of `history.shardIOConcurrency` is **1** — every shard processes
+persistence operations serially. This is a universal bottleneck affecting **all
+branches equally** (main, PR1, PR2). With `shardIOConcurrency=1`, throughput
+caps at ~32 iter/s (ii=1). Raising it to 4096 raises throughput to **~43 iter/s**
+(+33%).
+
+The results in the table below were all collected with `shardIOConcurrency=1`
+(the default). No branch-specific config changes were made. The 15–24% variation
+between Baseline (2.22) and the PRs (2.69–2.75) reflects genuine per-iteration
+differences (internal-iterations=10 obscures workflow-level throughput), but all
+share the same ~32 iter/s ceiling at the workflow-execution level.
+
+### GC overhead is ~30%
+
+CPU profiles consistently show GC consuming ~30% of CPU time. This is a
+cross-cutting concern independent of the PRs. Reducing allocation or improving
+GC efficiency would benefit all branches.
+
+### No lock contention
+
+Block and mutex profiles are empty — zero contention on any lock, mutex, or
+semaphore during the steady-state workload.
+
+### ScyllaDB is lightly loaded
+
+ScyllaDB uses ~8% of its allocated CPU. The slow path is not the database.
+
+### Interceptor chain overhead
+
+The gRPC interceptor chain (TelemetryInterceptor,
+NamespaceRateLimitInterceptorImpl, RateLimitInterceptor, etc.) accounts for
+~26% cumulative CPU. While this is wrapper overhead, significant portions are
+inherent to the gRPC framework.
 
 ## Results Table
 
